@@ -1,0 +1,1177 @@
+openapi: 3.0.2
+info:
+  title: fincode API
+  description: |
+    fincodeのAPIリファレンスです。\
+    fincodeは決済情報のほか様々なリソースを管理できるため、リソース指向なREST APIをベースとしたインターフェイス設計のもとでAPIを提供しています。\
+    APIの呼び出しにはAPIキーによる認証が必要であり、リクエストの際に`Authorization`ヘッダーに有効なAPIキーをセットすることで認証できます。
+servers:
+  - url: https://api.fincode.jp
+    description: 本番環境
+  - url: https://api.test.fincode.jp
+    description: テスト環境
+tags:
+  - name: リクエストヘッダー
+    description: |
+      fincodeのAPIリクエストを行う際に指定可能なリクエストヘッダーの一覧です。
+      | ヘッダー | 指定方法 | 説明 |
+      | --- | --- | --- |
+      | `Authorization` | Bearer {{API キー}} または Basic {{Base64エンコード済みAPIキー}} | APIキーを指定します。Bearer認証またはBasic認証が使用できます。|
+      | `Content-Type` | application/json;charset=UTF-8 | リクエストボディのContent-Typeを指定します。 |
+      | `idempotent_key`| UUID v4 | リクエストの冪等性を担保するためのキーを指定します。 |
+  - name: 冪等処理
+    description: |
+      加盟店様がAPIリクエストのリクエストヘッダー`idempotent_key`に冪等キー（任意）を設定することで、リクエストを一意に特定し、2回目以降のリクエストで同じ結果を返却します。
+      UUIDv4形式で、リクエスト毎にユニークになるよう値を指定してください。  
+      ### サンプル
+      ```txt
+      idempotent_key: 1003d6af-9e68-4f4e-a916-663e29db5377
+      ```
+  - name: エラーオブジェクト
+    description: |
+      HTTPステータスコード`4xx`系と`5xx`系のエラーが発生した場合、API共通のエラーオブジェクトを返します。\
+      `error_message`の値がエラー原因に該当します。内容に応じて修正してください。 \
+      ### サンプル, エラーは`errors`の値として配列形式でレスポンスされます。
+      ```json
+      {
+          "errors": [
+              {
+                  "error_code": "E123456789",
+                  "error_message": "エラー内容1"
+              }
+          ]
+      }
+      ```
+      | パラメータ | | 説明 |
+      | --- | --- | ---|
+      | errors | | エラーオブジェクトの配列です。 |
+      | | error_code | エラーコードです。プログラムで判定する場合はこちらを利用することが推奨されます。|
+      | | error_message | エラーメッセージです。エラーの内容を示します。|
+  - name: 顧客
+    description: |
+      顧客を管理するAPIです。fincodeにおける顧客は多くのアプリケーションにおいて購入者となるユーザーアカウントに1:1で紐づけられます。\
+      顧客には名前やメールアドレスを登録し管理でき、決済やカード情報などのリソースが関連付けられます。
+  - name: カード
+    description: |
+      顧客が持つカードを管理するAPIです。\
+      カードにはクレジットカードの有効期限や名義などの情報が含まれており、決済の実行時にカードのIDを指定することでそのカードに対して請求（決済）を行います。\
+      \
+  - name: サブスクリプション
+    description: |
+      サブスクリプションを管理するAPIです。\
+      指定した顧客に対して指定したプランで定期・定額で請求を行うサブスクリプションを登録・更新・削除できるほか、結果照会APIを用いてあるサブスクリプションによって発生した毎回の課金の結果を一覧で取得することもできます。\
+      \
+      サブスクリプション課金の処理は非同期で行われ、Webhookイベント`recurring.card.batch`（サブスクリプション課金（カード決済） 実行）で課金結果を受け取ることができます。
+paths:
+  /v1/customers:
+    post:
+      security:
+        - Secret-Bearer-Auth: []
+        - Secret-Basic-Auth: []
+      operationId: createCustomer
+      tags:
+        - 顧客
+      summary: 顧客 登録
+      description: |
+        顧客情報を登録します。
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Customer.Creating.Request"
+      responses:
+        "200":
+          description: リクエストに成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Customer.Creating.Response"
+        "400":
+          description: 不正なリクエスト
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FincodeAPIError.Response"
+      x-code-samples:
+        - lang: node
+          label: Node.js
+          source: |
+            import { createFincode } from "@fincode/node";
+            const API_KEY = "<Secret API Key>";
+            (async () => {
+                const fincode = createFincode({ apiKey: API_KEY, isLiveMode: false });
+                try {
+                    // リクエストの送信
+                    const customer = await fincode.customers.create({
+                        name: "John Doe",
+                        email: "john@example.com",
+                    });
+                } catch (e) {
+                    // エラーの処理
+                }
+            })();
+        - lang: php
+          label: PHP
+          source: |
+            <?php
+            $apiKey = '<Secret API Key>';
+            $baseUrl = "https://api.test.fincode.jp";
+            $endpoint = "/v1/customers";
+            $headers = [
+                "Authorization: Bearer " . $apiKey,
+                "Content-Type: application/json"
+            ];
+            $data = json_encode([
+                "name" => "John Doe",
+                "email" => "john@example.com"
+            ]);
+            $session = curl_init();
+            curl_setopt($session, CURLOPT_URL, $baseUrl . $endpoint);
+            curl_setopt($session, CURLOPT_HTTPHEADER, $headers);
+            curl_setopt($session, CURLOPT_POST, true);
+            curl_setopt($session, CURLOPT_POSTFIELDS, $data);
+            curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
+            // curl_setopt($session, CURLOPT_SSL_VERIFYPEER, );
+            // curl_setopt($session, CURLOPT_SSL_VERIFYHOST, );
+            $response = curl_exec($session);
+            if ($response === false) {
+                # エラー処理
+                echo "cURL Error: " . curl_error($session);
+            } else {
+                # APIからのデータを処理
+                var_dump($response);
+            }
+            curl_close($session);
+  /v1/customers/{id}:
+    get:
+      security:
+        - Secret-Bearer-Auth: []
+        - Public-Bearer-Auth: []
+        - Secret-Basic-Auth: []
+      operationId: retrieveCustomer
+      tags:
+        - 顧客
+      summary: 顧客 取得
+      description: |
+        IDで指定した顧客情報を取得します。
+      parameters:
+        - name: id
+          in: path
+          description: 顧客ID
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/CustomerId_schema"
+          required: true
+      responses:
+        "200":
+          description: リクエストに成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Customer.Retrieving.Response"
+        "400":
+          description: 不正なリクエスト
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FincodeAPIError.Response"
+      x-code-samples:
+        - lang: node
+          label: Node.js
+          source: |
+            import { createFincode } from "@fincode/node";
+            const API_KEY = "<Secret API Key>";
+            (async () => {
+                const fincode = createFincode({ apiKey: API_KEY, isLiveMode: false });
+                const customerId = "<Customer ID>";
+                try {
+                    // リクエストの送信
+                    const customer = await fincode.customers.retrieve(customerId);
+                } catch (e) {
+                    // エラーの処理
+                }
+            })();
+        - lang: php
+          label: PHP
+          source: |
+            <?php
+            $apiKey = '<Secret API Key>';
+            $customerId = '<Customer ID>';
+            $baseUrl = "https://api.test.fincode.jp";
+            $endpoint = "/v1/customers/{$customerId}";
+            $headers = [
+                "Authorization: Bearer " . $apiKey,
+            ];
+            $session = curl_init();
+            curl_setopt($session, CURLOPT_URL, $baseUrl . $endpoint);
+            curl_setopt($session, CURLOPT_HTTPHEADER, $headers);
+            curl_setopt($session, CURLOPT_HTTPGET, true);
+            curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
+            // curl_setopt($session, CURLOPT_SSL_VERIFYPEER, );
+            // curl_setopt($session, CURLOPT_SSL_VERIFYHOST, );
+            $response = curl_exec($session);
+            if ($response === false) {
+                # エラー処理
+                echo "cURL Error: " . curl_error($session);
+            } else {
+                # APIからのデータを処理
+                var_dump($response);
+            }
+            curl_close($session);
+    put:
+      security:
+        - Secret-Bearer-Auth: []
+        - Secret-Basic-Auth: []
+      operationId: updateCustomer
+      tags:
+        - 顧客
+      summary: 顧客 更新
+      description: |
+        IDで指定した顧客情報を更新します。
+      parameters:
+        - name: id
+          in: path
+          description: 顧客ID
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/CustomerId_schema"
+          required: true
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Customer.Updating.Request"
+      responses:
+        "200":
+          description: リクエストに成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Customer.Updating.Response"
+        "400":
+          description: 不正なリクエスト
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FincodeAPIError.Response"
+      x-code-samples:
+        - lang: node
+          label: Node.js
+          source: |
+            import { createFincode } from "@fincode/node";
+            const API_KEY = "<Secret API Key>";
+            (async () => {
+                const fincode = createFincode({ apiKey: API_KEY, isLiveMode: false });
+                const customerId = "<Customer ID>";
+                try {
+                    // リクエストの送信
+                    const customer = await fincode.customers.update(customerId, {
+                        name: "Jane Doe",
+                        email: "jane@example.com",
+                    });
+                } catch (e) {
+                    // エラーの処理
+                }
+            })();
+        - lang: php
+          label: PHP
+          source: |
+            <?php
+            $apiKey = '<Secret API Key>';
+            $customerId = '<Customer ID>';
+            $baseUrl = "https://api.test.fincode.jp";
+            $endpoint = "/v1/customers/{$customerId}";
+            $headers = [
+                "Authorization: Bearer " . $apiKey,
+                "Content-Type: application/json"
+            ];
+            $data = json_encode([
+                "name" => "Jane Doe",
+                "email" => "jane@example.com"
+            ]);
+            $session = curl_init();
+            curl_setopt($session, CURLOPT_URL, $baseUrl . $endpoint);
+            curl_setopt($session, CURLOPT_HTTPHEADER, $headers);
+            curl_setopt($session, CURLOPT_CUSTOMREQUEST, 'PUT');
+            curl_setopt($session, CURLOPT_POSTFIELDS, $data);
+            curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
+            // curl_setopt($session, CURLOPT_SSL_VERIFYPEER, );
+            // curl_setopt($session, CURLOPT_SSL_VERIFYHOST, );
+            $response = curl_exec($session);
+            if ($response === false) {
+                # エラー処理
+                echo "cURL Error: " . curl_error($session);
+            } else {
+                # APIからのデータを処理
+                var_dump($response);
+            }
+            curl_close($session);
+  /v1/customers/{customer_id}/cards:
+    post:
+      security:
+        - Secret-Bearer-Auth: []
+        - Secret-Basic-Auth: []
+      tags:
+        - カード
+      operationId: createCustomerCard
+      summary: カード 登録
+      description: |
+        `customer_id`で指定した顧客に対しカードを登録します。
+      parameters:
+        - name: customer_id
+          in: path
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/CustomerId_schema"
+          description: このカードが紐づく顧客のID
+          required: true
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CustomerCard.Creating.Request"
+      responses:
+        "200":
+          description: リクエストに成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CustomerCard.Creating.Response"
+        "400":
+          description: 不正なリクエスト
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FincodeAPIError.Response"
+      x-code-samples:
+        - lang: node
+          label: Node.js
+          source: |
+            import { createFincode } from "@fincode/node";
+            const API_KEY = "<Secret API Key>";
+            (async () => {
+                const fincode = createFincode({ apiKey: API_KEY, isLiveMode: false });
+                const customerId = "<Customer ID>";
+                try {
+                    // リクエストの送信
+                    const card = await fincode.cards.create(customerId, {
+                        token: "<Token from fincodeJS>",
+                        default_flag: "1",
+                    });
+                } catch (e) {
+                    // エラーの処理
+                }
+            })();
+        - lang: php
+          label: PHP
+          source: |
+            <?php
+            $apiKey = '<Secret API Key>';
+            $customerId = '<Customer ID>';
+            $baseUrl = "https://api.test.fincode.jp";
+            $endpoint = "/v1/customers/{$customerId}/cards";
+            $headers = [
+                "Authorization: Bearer " . $apiKey,
+                "Content-Type: application/json"
+            ];
+            $data = json_encode([
+                "token" => "613531623566356561366261346366623132306663393139",
+                "default_flag" => "1"
+            ]);
+            $session = curl_init();
+            curl_setopt($session, CURLOPT_URL, $baseUrl . $endpoint);
+            curl_setopt($session, CURLOPT_HTTPHEADER, $headers);
+            curl_setopt($session, CURLOPT_POST, true);
+            curl_setopt($session, CURLOPT_POSTFIELDS, $data);
+            curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
+            // curl_setopt($session, CURLOPT_SSL_VERIFYPEER, );
+            // curl_setopt($session, CURLOPT_SSL_VERIFYHOST, );
+            $response = curl_exec($session);
+            if ($response === false) {
+                # エラー処理
+                echo "cURL Error: " . curl_error($session);
+            } else {
+                # APIからのデータを処理
+                var_dump($response);
+            }
+            curl_close($session);
+  /v1/customers/{customer_id}/cards/{id}:
+    get:
+      security:
+        - Secret-Bearer-Auth: []
+        - Public-Bearer-Auth: []
+        - Secret-Basic-Auth: []
+      tags:
+        - カード
+      operationId: retrieveCustomerCard
+      summary: カード 取得
+      description: |
+        `customer_id`で指定した顧客に対し紐づくカードのうち`id`で指定したものを取得します。
+      parameters:
+        - name: customer_id
+          in: path
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/CustomerId_schema"
+          description: このカードが紐づく顧客のID
+          required: true
+        - name: id
+          in: path
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/CardId_schema"
+          description: 取得するカードのID
+          required: true
+      responses:
+        "200":
+          description: リクエストに成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CustomerCard.Retrieving.Response"
+        "400":
+          description: 不正なリクエスト
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FincodeAPIError.Response"
+      x-code-samples:
+        - lang: node
+          label: Node.js
+          source: |
+            import { createFincode } from "@fincode/node";
+            const API_KEY = "<Secret API Key>";
+            (async () => {
+                const fincode = createFincode({ apiKey: API_KEY, isLiveMode: false });
+                const customerId = "<Customer ID>";
+                const cardId = "<Card ID>";
+                try {
+                    // リクエストの送信
+                    const card = await fincode.cards.retrieve(customerId, cardId);
+                } catch (e) {
+                    // エラーの処理
+                }
+            })();
+        - lang: php
+          label: PHP
+          source: |
+            <?php
+            $apiKey = '<Secret API Key>';
+            $customerId = '<Customer ID>';
+            $cardId = '<Card ID>';
+            $baseUrl = "https://api.test.fincode.jp";
+            $endpoint = "/v1/customers/{$customerId}/cards/{$cardId}";
+            $headers = [
+                "Authorization: Bearer " . $apiKey,
+            ];
+            $session = curl_init();
+            curl_setopt($session, CURLOPT_URL, $baseUrl . $endpoint);
+            curl_setopt($session, CURLOPT_HTTPHEADER, $headers);
+            curl_setopt($session, CURLOPT_HTTPGET, true);
+            curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
+            // curl_setopt($session, CURLOPT_SSL_VERIFYPEER, );
+            // curl_setopt($session, CURLOPT_SSL_VERIFYHOST, );
+            $response = curl_exec($session);
+            if ($response === false) {
+                # エラー処理
+                echo "cURL Error: " . curl_error($session);
+            } else {
+                # APIからのデータを処理
+                var_dump($response);
+            }
+            curl_close($session);
+    put:
+      security:
+        - Secret-Bearer-Auth: []
+        - Secret-Basic-Auth: []
+      tags:
+        - カード
+      operationId: updateCustomerCard
+      summary: カード 更新
+      description: |
+        `customer_id`で指定した顧客に対し紐づくカードのうち`id`で指定したものを更新します。
+      parameters:
+        - name: customer_id
+          in: path
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/CustomerId_schema"
+          description: このカードが紐づく顧客のID
+          required: true
+        - name: id
+          in: path
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/CardId_schema"
+          description: 更新するカードのID
+          required: true
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CustomerCard.Updating.Request"
+      responses:
+        "200":
+          description: リクエストに成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CustomerCard.Updating.Response"
+        "400":
+          description: 不正なリクエスト
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FincodeAPIError.Response"
+      x-code-samples:
+        - lang: node
+          label: Node.js
+          source: |
+            import { createFincode } from "@fincode/node";
+            const API_KEY = "<Secret API Key>";
+            (async () => {
+                const fincode = createFincode({ apiKey: API_KEY, isLiveMode: false });
+                const customerId = "<Customer ID>";
+                const cardId = "<Card ID>";
+                try {
+                    // リクエストの送信
+                    const card = await fincode.cards.update(customerId, cardId, {
+                        default_flag: "0",
+                    });
+                } catch (e) {
+                    // エラーの処理
+                }
+            })();
+        - lang: php
+          label: PHP
+          source: |
+            <?php
+            $apiKey = '<Secret API Key>';
+            $customerId = '<Customer ID>';
+            $cardId = '<Card ID>';
+
+            $baseUrl = "https://api.test.fincode.jp";
+            $endpoint = "/v1/customers/{$customerId}/cards/{$cardId}";
+            $headers = [
+                "Authorization: Bearer " . $apiKey,
+            ];
+            $data = json_encode([
+                "default_flag" => "0"
+            ]);
+            $session = curl_init();
+            curl_setopt($session, CURLOPT_URL, $baseUrl . $endpoint);
+            curl_setopt($session, CURLOPT_HTTPHEADER, $headers);
+            curl_setopt($session, CURLOPT_CUSTOMREQUEST, 'PUT');
+            curl_setopt($session, CURLOPT_POSTFIELDS, $data);
+            curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
+            // curl_setopt($session, CURLOPT_SSL_VERIFYPEER, );
+            // curl_setopt($session, CURLOPT_SSL_VERIFYHOST, );
+            $response = curl_exec($session);
+            if ($response === false) {
+                # エラー処理
+                echo "cURL Error: " . curl_error($session);
+            } else {
+                # APIからのデータを処理
+                var_dump($response);
+            }
+            curl_close($session);
+    delete:
+      tags:
+        - カード
+      operationId: deleteCustomerCard
+      summary: カード 削除
+      description: |
+        `customer_id`で指定した顧客に対し紐づくカードのうち`id`で指定したものを削除します。
+      parameters:
+        - name: customer_id
+          in: path
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/CustomerId_schema"
+          description: このカードが紐づく顧客のID
+          required: true
+        - name: id
+          in: path
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/CardId_schema"
+          description: 削除するカードのID
+          required: true
+      responses:
+        "200":
+          description: リクエストに成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CustomerCard.Deleting.Response"
+        "400":
+          description: 不正なリクエスト
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FincodeAPIError.Response"
+      x-code-samples:
+        - lang: node
+          label: Node.js
+          source: |
+            import { createFincode } from "@fincode/node";
+            const API_KEY = "<Secret API Key>";
+            (async () => {
+                const fincode = createFincode({ apiKey: API_KEY, isLiveMode: false });
+
+                const customerId = "<Customer ID>";
+                const cardId = "<Card ID>";
+
+                try {
+                    // リクエストの送信
+                    const result = await fincode.cards.delete(customerId, cardId);
+                } catch (e) {
+                    // エラーの処理
+                }
+            })();
+        - lang: php
+          label: PHP
+          source: |
+            <?php
+            $apiKey = '<Secret API Key>';
+            $customerId = '<Customer ID>';
+            $cardId = '<Card ID>';
+            $baseUrl = "https://api.test.fincode.jp";
+            $endpoint = "/v1/customers/{$customerId}/cards/{$cardId}";
+            $headers = [
+                "Authorization: Bearer " . $apiKey,
+            ];
+            $session = curl_init();
+            curl_setopt($session, CURLOPT_URL, $baseUrl . $endpoint);
+            curl_setopt($session, CURLOPT_HTTPHEADER, $headers);
+            curl_setopt($session, CURLOPT_CUSTOMREQUEST, 'DELETE');
+            curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
+            // curl_setopt($session, CURLOPT_SSL_VERIFYPEER, );
+            // curl_setopt($session, CURLOPT_SSL_VERIFYHOST, );
+            $response = curl_exec($session);
+            if ($response === false) {
+                # エラー処理
+                echo "cURL Error: " . curl_error($session);
+            } else {
+                # APIからのデータを処理
+                var_dump($response);
+            }
+            curl_close($session);
+  /v1/card_sessions:
+    post:
+      security:
+        - Secret-Bearer-Auth: []
+        - Secret-Basic-Auth: []
+      operationId: createCardRegistrationSession
+      tags:
+        - リダイレクト型カード登録
+      summary: カード登録URL 作成
+      description: |
+        fincodeが提供するリダイレクト型カード登録ページを発行し、そのカード登録ページへのURLをレスポンスします。
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CardRegistrationSession.Creating.Request"
+      responses:
+        "200":
+          description: リクエストに成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CardRegistrationSession.Creating.Response"
+        "400":
+          description: 不正なリクエスト
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FincodeAPIError.Response"
+      x-code-samples:
+        - lang: node
+          label: Node.js
+          source: |
+            import { createFincode } from "@fincode/node";
+            const API_KEY = "<Secret API Key>";
+            (async () => {
+                const fincode = createFincode({ apiKey: API_KEY, isLiveMode: false });
+                try {
+                    // リクエストの送信
+                    const cardRegistrationSession =
+                        await fincode.cardRegistrationSessions.create({
+                            success_url: "https://your-service.example.com/success",
+                            cancel_url: "https://your-service.example.com/cancel",
+                        });
+                } catch (e) {
+                    // エラーの処理
+                }
+            })();
+        - lang: php
+          label: PHP
+          source: |
+            <?php
+            $apiKey = '<Secret API Key>';
+            $baseUrl = "https://api.test.fincode.jp";
+            $endpoint = "/v1/card_sessions";
+            $headers = [
+                "Authorization: Bearer " . $apiKey,
+                "Content-Type: application/json"
+            ];
+            $data = json_encode([
+                "success_url" => "http://your-service.example.com/success",
+                "cancel_url" => "http://your-service.example.com/cancel",
+            ]);
+            $session = curl_init();
+            curl_setopt($session, CURLOPT_URL, $baseUrl . $endpoint);
+            curl_setopt($session, CURLOPT_HTTPHEADER, $headers);
+            curl_setopt($session, CURLOPT_POST, true);
+            curl_setopt($session, CURLOPT_POSTFIELDS, $data);
+            curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
+            // curl_setopt($session, CURLOPT_SSL_VERIFYPEER, );
+            // curl_setopt($session, CURLOPT_SSL_VERIFYHOST, );
+            $response = curl_exec($session);
+            if ($response === false) {
+                # エラー処理
+                echo "cURL Error: " . curl_error($session);
+            } else {
+                # APIからのデータを処理
+                var_dump($response);
+            }
+            curl_close($session);
+  /v1/subscriptions:
+    post:
+      security:
+        - Secret-Bearer-Auth: []
+        - Secret-Basic-Auth: []
+      operationId: createSubscription
+      tags:
+        - サブスクリプション
+      summary: サブスクリプション 登録
+      description: |
+        `customer_id`で指定した顧客に対して`plan_id`で指定したプランを適用したサブスクリプション情報を登録します。
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Subscription.Creating.Request"
+      responses:
+        "200":
+          description: リクエストに成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Subscription.Creating.Response"
+        "400":
+          description: 不正なリクエスト
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FincodeAPIError.Response"
+      x-code-samples:
+        - lang: node
+          label: Node.js
+          source: |
+            import { createFincode } from "@fincode/node";
+            const API_KEY = "<Secret API Key>";
+            (async () => {
+                const fincode = createFincode({ apiKey: API_KEY, isLiveMode: false });
+                const planId = "<Plan ID>";
+                const customerId = "<Customer ID>";
+                const cardId = "<Card ID>";
+                try {
+                    // リクエストの送信
+                    const subscription = await fincode.subscriptions.create({
+                        pay_type: "Card",
+                        plan_id: planId,
+                        customer_id: customerId,
+                        card_id: cardId,
+                        start_date: "2022/05/16",
+                    });
+                } catch (e) {
+                    // エラーの処理
+                }
+            })();
+        - lang: php
+          label: PHP
+          source: |
+            <?php
+            $apiKey = '<Secret API Key>';
+            $baseUrl = "https://api.test.fincode.jp";
+            $endpoint = "/v1/subscriptions";
+            $headers = [
+                "Authorization: Bearer " . $apiKey,
+                "Content-Type: application/json"
+            ];
+            $data = json_encode([
+                "pay_type" => "Card",
+                "plan_id" => "<Plan ID>",
+                "customer_id" => "<Customer ID>",
+                "card_id" => "<Card ID>",
+                "start_date" => "2022/05/16",
+            ]);
+            $session = curl_init();
+            curl_setopt($session, CURLOPT_URL, $baseUrl . $endpoint);
+            curl_setopt($session, CURLOPT_HTTPHEADER, $headers);
+            curl_setopt($session, CURLOPT_POST, true);
+            curl_setopt($session, CURLOPT_POSTFIELDS, $data);
+            curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
+            // curl_setopt($session, CURLOPT_SSL_VERIFYPEER, );
+            // curl_setopt($session, CURLOPT_SSL_VERIFYHOST, );
+            $response = curl_exec($session);
+            if ($response === false) {
+                # エラー処理
+                echo "cURL Error: " . curl_error($session);
+            } else {
+                # APIからのデータを処理
+                var_dump($response);
+            }
+            curl_close($session);
+  /v1/subscriptions/{id}:
+    get:
+      security:
+        - Secret-Bearer-Auth: []
+        - Secret-Basic-Auth: []
+      operationId: retrieveSubscription
+      tags:
+        - サブスクリプション
+      summary: サブスクリプション 取得
+      description: |
+        IDで指定したサブスクリプション情報を取得します。
+      parameters:
+        - name: id
+          in: path
+          description: サブスクリプションID
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/SubscriptionId_schema"
+          required: true
+      responses:
+        "200":
+          description: リクエストに成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Subscription.Retrieving.Response"
+        "400":
+          description: 不正なリクエスト
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FincodeAPIError.Response"
+      x-code-samples:
+        - lang: node
+          label: Node.js
+          source: |
+            import { createFincode } from "@fincode/node";
+            const API_KEY = "<Secret API Key>";
+            (async () => {
+                const fincode = createFincode({ apiKey: API_KEY, isLiveMode: false });
+                const subscriptionId = "<Subscription ID>";
+                try {
+                    // リクエストの送信
+                    const subscription = await fincode.subscriptions.retrieve(
+                        subscriptionId,
+                        {
+                            pay_type: "Card",
+                        }
+                    );
+                } catch (e) {
+                    // エラーの処理
+                }
+            })();
+        - lang: php
+          label: PHP
+          source: |
+            <?php
+            $apiKey = '<Secret API Key>';
+            $subscriptionId = '<Subscription ID>';
+            $baseUrl = "https://api.test.fincode.jp";
+            $endpoint = "/v1/subscriptions/{$subscriptionId}";
+            $queryParams = [
+                "pay_type" => "Card",
+            ];
+            $headers = [
+                "Authorization: Bearer " . $apiKey,
+            ];
+            $session = curl_init();
+            curl_setopt($session, CURLOPT_URL, $baseUrl . $endpoint . '?' . http_build_query($queryParams));
+            curl_setopt($session, CURLOPT_HTTPHEADER, $headers);
+            curl_setopt($session, CURLOPT_HTTPGET, true);
+            curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
+            // curl_setopt($session, CURLOPT_SSL_VERIFYPEER, );
+            // curl_setopt($session, CURLOPT_SSL_VERIFYHOST, );
+            $response = curl_exec($session);
+            if ($response === false) {
+                # エラー処理
+                echo "cURL Error: " . curl_error($session);
+            } else {
+                # APIからのデータを処理
+                var_dump($response);
+            }
+            curl_close($session);
+    put:
+      security:
+        - Secret-Bearer-Auth: []
+        - Secret-Basic-Auth: []
+      operationId: updateSubscription
+      tags:
+        - サブスクリプション
+      summary: サブスクリプション 更新
+      description: |
+        IDで指定したサブスクリプション情報を更新します。\
+        指定されたパラメータのみ更新します。\
+        サブスクリプションの初回課金がすでに行われているとき（`start_date ≤ {{現在時刻}}`のとき）、サブスクリプションは更新できません。
+      parameters:
+        - name: id
+          in: path
+          description: サブスクリプションID
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/SubscriptionId_schema"
+          required: true
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Subscription.Updating.Request"
+      responses:
+        "200":
+          description: リクエストに成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Subscription.Updating.Response"
+        "400":
+          description: 不正なリクエスト
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FincodeAPIError.Response"
+      x-code-samples:
+        - lang: node
+          label: Node.js
+          source: |
+            import { createFincode } from "@fincode/node";
+            const API_KEY = "<Secret API Key>";
+            (async () => {
+                const fincode = createFincode({ apiKey: API_KEY, isLiveMode: false });
+                const subscriptionId = "<Subscription ID>";
+                try {
+                    // リクエストの送信
+                    const subscription = await fincode.subscriptions.update(
+                        subscriptionId,
+                        {
+                            stop_date: "2023/12/31",
+                        }
+                    );
+                } catch (e) {
+                    // エラーの処理
+                }
+            })();
+        - lang: php
+          label: PHP
+          source: |
+            <?php
+            $apiKey = '<Secret API Key>';
+            $subscriptionId = '<Subscription ID>';
+            $baseUrl = "https://api.test.fincode.jp";
+            $endpoint = "/v1/subscriptions/{$subscriptionId}";
+            $headers = [
+                "Authorization: Bearer " . $apiKey,
+            ];
+            $data = json_encode([
+                "stop_date" => "2024/05/16"
+            ]);
+            $session = curl_init();
+            curl_setopt($session, CURLOPT_URL, $baseUrl . $endpoint);
+            curl_setopt($session, CURLOPT_HTTPHEADER, $headers);
+            curl_setopt($session, CURLOPT_CUSTOMREQUEST, 'PUT');
+            curl_setopt($session, CURLOPT_POSTFIELDS, $data);
+            curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
+            // curl_setopt($session, CURLOPT_SSL_VERIFYPEER, );
+            // curl_setopt($session, CURLOPT_SSL_VERIFYHOST, );
+            $response = curl_exec($session);
+            if ($response === false) {
+                # エラー処理
+                echo "cURL Error: " . curl_error($session);
+            } else {
+                # APIからのデータを処理
+                var_dump($response);
+            }
+            curl_close($session);
+    delete:
+      security:
+        - Secret-Bearer-Auth: []
+        - Secret-Basic-Auth: []
+      operationId: unsubscripbeSubscription
+      tags:
+        - サブスクリプション
+      summary: サブスクリプション 解約
+      description: |
+        IDで指定したサブスクリプションを解約し、請求を停止します。
+      parameters:
+        - name: id
+          in: path
+          description: サブスクリプションID
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/SubscriptionId_schema"
+          required: true
+      responses:
+        "200":
+          description: リクエストに成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Subscription.Unsubscribing.Response"
+        "400":
+          description: 不正なリクエスト
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FincodeAPIError.Response"
+      x-code-samples:
+        - lang: node
+          label: Node.js
+          source: |
+            import { createFincode } from "@fincode/node";
+            const API_KEY = "<Secret API Key>";
+            (async () => {
+                const fincode = createFincode({ apiKey: API_KEY, isLiveMode: false });
+                const subscriptionId = "<Subscription ID>";
+                try {
+                    // リクエストの送信
+                    const subscription = await fincode.subscriptions.cancel(
+                        subscriptionId,
+                        {
+                            pay_type: "Card",
+                        }
+                    );
+                } catch (e) {
+                    // エラーの処理
+                }
+            })();
+        - lang: php
+          label: PHP
+          source: |
+            <?php
+            $apiKey = '<Secret API Key>';
+            $subscriptionId = '<Subscription ID>';
+            $baseUrl = "https://api.test.fincode.jp";
+            $endpoint = "/v1/subscriptions/{$subscriptionId}";
+            $queryParams = [
+                "pay_type" => "Card",
+            ];
+            $headers = [
+                "Authorization: Bearer " . $apiKey,
+            ];
+            $session = curl_init();
+            curl_setopt($session, CURLOPT_URL, $baseUrl . $endpoint . '?' . http_build_query($queryParams));
+            curl_setopt($session, CURLOPT_HTTPHEADER, $headers);
+            curl_setopt($session, CURLOPT_CUSTOMREQUEST, 'DELETE');
+            curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
+            // curl_setopt($session, CURLOPT_SSL_VERIFYPEER, );
+            // curl_setopt($session, CURLOPT_SSL_VERIFYHOST, );
+            $response = curl_exec($session);
+            if ($response === false) {
+                # エラー処理
+                echo "cURL Error: " . curl_error($session);
+            } else {
+                # APIからのデータを処理
+                var_dump($response);
+            }
+            curl_close($session);
+  /v1/subscriptions/{id}/result:
+    get:
+      security:
+        - Secret-Bearer-Auth: []
+        - Secret-Basic-Auth: []
+      operationId: retrieveSubscriptionResultList
+      tags:
+        - サブスクリプション
+      summary: サブスクリプション結果 一覧取得
+      description: |
+        サブスクリプションにより発生した課金の結果を一覧で取得します。クエリパラメータを指定して取得する条件を絞り込めます。
+      parameters:
+        - in: query
+          name: クエリ
+          description: |
+            サブスクリプション結果の一覧取得において検索条件となるクエリパラメータ
+          required: true
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/Pagination.QueryParams"
+              - $ref: "#/components/schemas/SubscriptionResult.ListRetrieving.QueryParams"
+        - name: id
+          in: path
+          description: サブスクリプションID
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/SubscriptionId_schema"
+          required: true
+      responses:
+        "200":
+          description: リクエストに成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SubscriptionResult.ListRetrieving.Response"
+        "400":
+          description: 不正なリクエスト
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FincodeAPIError.Response"
+      x-code-samples:
+        - lang: node
+          label: Node.js
+          source: |
+            import { createFincode } from "@fincode/node";
+            const API_KEY = "<Secret API Key>";
+            (async () => {
+                const fincode = createFincode({ apiKey: API_KEY, isLiveMode: false });
+                const subscriptionId = "<Subscription ID>";
+                try {
+                    // リクエストの送信
+                    const results = await fincode.subscriptions.retrieveResultList(
+                        subscriptionId,
+                        {
+                            pay_type: "Card",
+                            limit: 10,
+                        }
+                    );
+                } catch (e) {
+                    // エラーの処理
+                }
+            })();
+        - lang: php
+          label: PHP
+          source: |
+            <?php
+            $apiKey = '<Secret API Key>';
+            $subscriptionId = '<Subscription ID>';
+            $baseUrl = "https://api.test.fincode.jp";
+            $endpoint = "/v1/subscriptions/{$subscriptionId}/result";
+            $queryParams = [
+                "pay_type" => "Card",
+                "limit" => 10,
+            ];
+            $headers = [
+                "Authorization: Bearer " . $apiKey,
+            ];
+            $session = curl_init();
+            curl_setopt($session, CURLOPT_URL, $baseUrl . $endpoint);
+            curl_setopt($session, CURLOPT_HTTPHEADER, $headers);
+            curl_setopt($session, CURLOPT_HTTPGET, true);
+            curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
+            // curl_setopt($session, CURLOPT_SSL_VERIFYPEER, );
+            // curl_setopt($session, CURLOPT_SSL_VERIFYHOST, );
+            $response = curl_exec($session);
+            if ($response === false) {
+                # エラー処理
+                echo "cURL Error: " . curl_error($session);
+            } else {
+                # APIからのデータを処理
+                var_dump($response);
+            }
+            curl_close($session);
