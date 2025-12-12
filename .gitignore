@@ -24,9 +24,9 @@ build/
 Thumbs.db
 
 # Frontend specific
-frontend/node_modules/
-frontend/dist/
-frontend/.vite/
+node_modules/
+dist/
+.vite/
 
 # Backend specific
 backend/vendor/

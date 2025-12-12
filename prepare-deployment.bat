@@ -46,7 +46,6 @@ echo [3/7] OK
 
 :: Build frontend
 echo [4/7] Building frontend assets...
-cd frontend
 
 :: Check if node_modules exists
 if not exist node_modules\ (
@@ -55,7 +54,6 @@ if not exist node_modules\ (
     if %errorlevel% neq 0 (
         echo [4/7] FAIL
         echo     ERROR: npm install failed!
-        cd ..
         pause
         exit /b 1
     )
@@ -67,16 +65,14 @@ if %errorlevel% neq 0 (
     echo [4/7] FAIL
     echo     ERROR: Frontend build failed!
     echo     Please check the error messages above and fix any issues.
-    cd ..
     pause
     exit /b 1
 )
-cd ..
 echo [4/7] OK
 
 :: Copy frontend dist files
 echo [5/7] Copying frontend files to deployment...
-xcopy /s /y /q frontend\dist\*.* deployment\ >nul
+xcopy /s /y /q dist\*.* deployment\ >nul
 if %errorlevel% neq 0 (
     echo [5/7] FAIL
     echo     ERROR: Failed to copy frontend files!
