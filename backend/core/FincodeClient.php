@@ -75,7 +75,7 @@ class FincodeClient
             $bytes[8] = chr((ord($bytes[8]) & 0x3f) | 0x80);
 
             return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($bytes), 4));
-        } catch (Exception $e) {
+        } catch (Exception) {
             return uniqid('fincode_', true);
         }
     }

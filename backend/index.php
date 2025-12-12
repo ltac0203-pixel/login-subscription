@@ -23,7 +23,6 @@ if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') {
 }
 
 $allowed_origins = [
-    'http://localhost:5173',
     'https://tsunagi.space'
 ];
 
