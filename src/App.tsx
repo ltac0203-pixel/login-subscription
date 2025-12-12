@@ -39,7 +39,10 @@ function App() {
                   </ProtectedRoute>
                 }
               />
-              <Route path="/dashboard" element={<Navigate to="/subscription" replace />} />
+              <Route
+                path="/dashboard"
+                element={<Navigate to="/subscription" replace />}
+              />
               <Route path="*" element={<RootRedirect />} />
             </Routes>
           </Suspense>

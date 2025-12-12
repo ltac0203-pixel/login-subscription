@@ -322,7 +322,7 @@ function Subscription() {
           planError =
             err instanceof Error
               ? err.message
-              : "プラン情報の取得に失敗しました。時間をおいて再試行してください。";
+              : "プラン情報の取得に失敗しました。";
           return null;
         }),
       ]);
@@ -407,9 +407,7 @@ function Subscription() {
     const formContainer = document.getElementById(FINCODE_ELEMENT_FORM_ID);
     const uiContainer = document.getElementById(FINCODE_ELEMENT_ID);
     if (!formContainer || !uiContainer) {
-      setFincodeSetupError(
-        "カード入力エリアの初期化に失敗しました。ページを再読み込みしてください。"
-      );
+      setFincodeSetupError("カード入力エリアの初期化に失敗しました。");
       return;
     }
 
@@ -556,10 +554,7 @@ function Subscription() {
 
   const handleRegisterCardFromForm = async () => {
     if (!fincodeReady || !fincodeUiRef.current || !fincodeRef.current) {
-      setError(
-        fincodeSetupError ||
-          "カード入力フォームの準備中です。少し待って再度お試しください。"
-      );
+      setError(fincodeSetupError || "カード入力フォームの準備中です。");
       return;
     }
 
@@ -703,9 +698,7 @@ function Subscription() {
       return;
     }
     if (!plan?.id) {
-      setError(
-        "プランを選択してください。取得できない場合はページを再読み込みしてください。"
-      );
+      setError("プランを選択してください。");
       return;
     }
 
@@ -824,8 +817,7 @@ function Subscription() {
           <div
             className="h-full w-full"
             style={{
-              backgroundImage: `repeating-linear-gradient(90deg, #000 0, #000 1px, transparent 1px, transparent 60px),
-                            repeating-linear-gradient(180deg, #000 0, #000 1px, transparent 1px, transparent 60px)`,
+              backgroundColor: "#000",
             }}
           ></div>
         </div>
@@ -833,8 +825,7 @@ function Subscription() {
           <div
             className="h-full w-full"
             style={{
-              backgroundImage: `radial-gradient(circle, #000 1px, transparent 1px)`,
-              backgroundSize: "44px 44px",
+              backgroundColor: "#000",
             }}
           ></div>
         </div>
@@ -843,24 +834,11 @@ function Subscription() {
       <div className="relative z-10">
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="mb-12 space-y-5">
-            <p className="text-[11px] font-mono uppercase tracking-[0.28em] text-gray-500">
-              Subscription
-            </p>
             <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
               <div className="space-y-3">
                 <h1 className="text-4xl sm:text-5xl md:text-6xl font-thin tracking-tight leading-none">
                   サブスクリプション管理
                 </h1>
-                <p className="text-sm sm:text-base text-gray-600 font-light max-w-2xl">
-                  fincode by GMO
-                  で決済を扱います。カード登録、プラン選択、解約をここで完結できます。
-                </p>
-              </div>
-              <div className="flex items-center gap-2 text-xs text-gray-600 font-mono tracking-[0.16em]">
-                <span className="w-2 h-2 rounded-full bg-gray-900" />
-                <span>Secure</span>
-                <span className="w-2 h-2 rounded-full bg-gray-300" />
-                <span>PCI DSS Ready</span>
               </div>
             </div>
             <div className="w-16 h-[1px] bg-gray-900 opacity-20" />
@@ -897,7 +875,7 @@ function Subscription() {
             >
               <div className="space-y-6">
                 <div className="bg-white border border-gray-200 p-6 relative overflow-hidden">
-                  <div className="absolute inset-0 pointer-events-none opacity-[0.04] bg-gradient-to-br from-gray-900 via-transparent to-transparent" />
+                  <div className="absolute inset-0 pointer-events-none opacity-[0.04] bg-gray-900/5" />
                   <div className="relative flex items-center justify-between mb-4">
                     <div>
                       <p className="text-[11px] font-mono uppercase tracking-[0.22em] text-gray-500">
@@ -907,9 +885,6 @@ function Subscription() {
                         {heading}
                       </h2>
                     </div>
-                    <span className="text-[11px] uppercase tracking-[0.18em] text-gray-500">
-                      Monthly
-                    </span>
                   </div>
                   <p className="text-3xl font-light text-gray-900 mb-2">
                     {priceLabel}
@@ -932,10 +907,10 @@ function Subscription() {
                             type="button"
                             key={availablePlan.id}
                             onClick={() => setPlan(availablePlan)}
-                            className={`text-left border px-4 py-3 transition-all duration-150 rounded ${
+                            className={`text-left border px-4 py-3 rounded cursor-pointer ${
                               isActive
                                 ? "border-gray-900 bg-gray-900 text-white shadow-sm"
-                                : "border-gray-200 bg-white text-gray-900 hover:border-gray-400 hover:-translate-y-0.5"
+                                : "border-gray-200 bg-white text-gray-900"
                             }`}
                           >
                             <div className="flex items-start justify-between gap-2">
@@ -1029,7 +1004,7 @@ function Subscription() {
                       type="button"
                       onClick={loadSavedCards}
                       disabled={cardsLoading || loading}
-                      className="text-[11px] uppercase tracking-[0.16em] border border-gray-300 px-3 py-1.5 text-gray-700 hover:border-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="text-[11px] uppercase tracking-[0.16em] border border-gray-300 px-3 py-1.5 text-gray-700 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       再読み込み
                     </button>
@@ -1081,7 +1056,7 @@ function Subscription() {
                               disabled={
                                 deletingCardId === card.id || actionLoading
                               }
-                              className="inline-flex items-center gap-2 px-3 py-1.5 text-xs border border-red-400 text-red-600 rounded hover:bg-red-50 disabled:opacity-60 disabled:cursor-not-allowed"
+                              className="inline-flex items-center gap-2 px-3 py-1.5 text-xs border border-red-400 text-red-600 rounded cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                             >
                               {deletingCardId === card.id ? (
                                 <>
@@ -1142,7 +1117,7 @@ function Subscription() {
                         disabled={
                           !fincodeReady || fincodeLoading || actionLoading
                         }
-                        className="inline-flex items-center justify-center gap-2 bg-gray-900 text-white px-4 py-2 text-sm tracking-wide hover:bg-gray-800 disabled:bg-gray-400 transition-all duration-150 hover:-translate-y-0.5 hover:shadow-md disabled:hover:translate-y-0 disabled:hover:shadow-none disabled:cursor-not-allowed w-full sm:w-auto cursor-pointer"
+                        className="inline-flex items-center justify-center gap-2 bg-gray-900 text-white px-4 py-2 text-sm tracking-wide disabled:bg-gray-400 disabled:cursor-not-allowed w-full sm:w-auto cursor-pointer"
                       >
                         {actionLoading ? (
                           <>
@@ -1170,9 +1145,6 @@ function Subscription() {
                         サブスクリプション開始
                       </h3>
                     </div>
-                    <span className="text-[10px] uppercase tracking-[0.2em] text-gray-500">
-                      fincode by GMO
-                    </span>
                   </div>
                   <form onSubmit={handleSubscribe} className="space-y-4">
                     <div>
@@ -1203,14 +1175,11 @@ function Subscription() {
                           プランを取得できませんでした。ページを再読み込みしてください。
                         </p>
                       )}
-                      <p className="text-xs text-gray-500 mt-1">
-                        選択中のプランがサブスクリプション登録に使用されます。
-                      </p>
                     </div>
                     <button
                       type="submit"
                       disabled={actionLoading}
-                      className="w-full inline-flex items-center justify-center gap-2 bg-gray-900 text-white px-4 py-2 text-sm tracking-wide hover:bg-gray-800 disabled:bg-gray-400 transition-colors"
+                      className="w-full inline-flex items-center justify-center gap-2 bg-gray-900 text-white px-4 py-2 text-sm tracking-wide cursor-pointer disabled:bg-gray-400"
                     >
                       {actionLoading ? (
                         <>
@@ -1249,7 +1218,7 @@ function Subscription() {
                       subscription.status === "canceled" ||
                       actionLoading
                     }
-                    className="w-full inline-flex items-center justify-center gap-2 border border-red-500 text-red-600 px-4 py-2 text-sm font-medium hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="w-full inline-flex items-center justify-center gap-2 border border-red-500 text-red-600 px-4 py-2 text-sm font-medium cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <i className="bi bi-x-circle" />
                     解約する
@@ -1299,14 +1268,14 @@ function Subscription() {
               <button
                 type="button"
                 onClick={cancelDeleteCard}
-                className="px-4 py-2 text-sm border border-gray-300 rounded text-gray-700 hover:bg-white"
+                className="px-4 py-2 text-sm border border-gray-300 rounded text-gray-700 cursor-pointer"
               >
                 キャンセル
               </button>
               <button
                 type="button"
                 onClick={confirmDeleteCard}
-                className="px-4 py-2 text-sm bg-red-600 text-white rounded hover:bg-red-700"
+                className="px-4 py-2 text-sm bg-red-600 text-white rounded cursor-pointer"
               >
                 削除する
               </button>

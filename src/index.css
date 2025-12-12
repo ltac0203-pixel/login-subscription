@@ -4,38 +4,15 @@
   --mono-black: #000000;
   --mono-white: #ffffff;
   --mono-gray-50: #fafafa;
-  --mono-gray-100: #f4f4f5;
   --mono-gray-200: #e4e4e7;
-  --mono-gray-300: #d4d4d8;
   --mono-gray-400: #a1a1aa;
-  --mono-gray-500: #71717a;
-  --mono-gray-600: #52525b;
-  --mono-gray-700: #3f3f46;
   --mono-gray-800: #27272a;
   --mono-gray-900: #18181b;
 
   --bg-primary: var(--mono-white);
   --bg-secondary: var(--mono-gray-50);
   --text-primary: var(--mono-black);
-  --text-secondary: var(--mono-gray-600);
   --border-primary: var(--mono-black);
-  --border-secondary: var(--mono-gray-300);
-
-  --ultra-gradient-primary: var(--mono-black);
-  --ultra-gradient-primary-soft: var(--mono-gray-200);
-
-  --ultra-gradient-surface: var(--mono-white);
-  --ultra-gradient-surface-dark: var(--mono-black);
-
-  --ultra-glass-light: var(--mono-white);
-  --ultra-glass-dark: var(--mono-black);
-  --ultra-glass-border: var(--mono-black);
-  --ultra-glass-shadow: none;
-  --ultra-glass-blur: none;
-
-  --ultra-gradient-success: #000000;
-  --ultra-gradient-warning: #000000;
-  --ultra-gradient-error: #000000;
 }
 
 html {
@@ -47,14 +24,6 @@ body {
   background-color: var(--bg-primary);
   color: var(--text-primary);
   min-height: 100vh;
-  background-image: linear-gradient(
-      to right,
-      var(--mono-gray-200) 1px,
-      transparent 1px
-    ),
-    linear-gradient(to bottom, var(--mono-gray-200) 1px, transparent 1px);
-  background-size: 40px 40px;
-  background-attachment: fixed;
 
   font-feature-settings: "cv11", "ss01";
   text-rendering: optimizeLegibility;
@@ -67,16 +36,7 @@ body.dark {
   --bg-primary: var(--mono-black);
   --bg-secondary: var(--mono-gray-900);
   --text-primary: var(--mono-white);
-  --text-secondary: var(--mono-gray-400);
   --border-primary: var(--mono-white);
-  --border-secondary: var(--mono-gray-700);
-
-  background-image: linear-gradient(
-      to right,
-      var(--mono-gray-800) 1px,
-      transparent 1px
-    ),
-    linear-gradient(to bottom, var(--mono-gray-800) 1px, transparent 1px);
 }
 
 ::selection {

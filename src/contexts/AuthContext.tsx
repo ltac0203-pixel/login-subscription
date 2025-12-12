@@ -1,23 +1,7 @@
-/* eslint-disable react-refresh/only-export-components */
-import React, { createContext, useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { authApi } from "../api/auth";
-
-interface User {
-  id: number;
-  email: string;
-}
-
-export interface AuthContextType {
-  user: User | null;
-  isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  logout: () => Promise<void>;
-  checkAuth: () => Promise<void>;
-}
-
-export const AuthContext = createContext<AuthContextType | undefined>(
-  undefined
-);
+import { AuthContext } from "./auth-context";
+import type { User } from "./auth-context";
 
 interface AuthProviderProps {
   children: React.ReactNode;

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
-import { AuthContext } from "../../contexts/AuthContext";
+import { AuthContext } from "../../contexts/auth-context";
 
 interface FormData {
   email: string;
@@ -112,8 +112,7 @@ const LoginForm: React.FC = () => {
           <div
             className="h-full w-full"
             style={{
-              backgroundImage: `repeating-linear-gradient(90deg, #000 0, #000 1px, transparent 1px, transparent 80px),
-                             repeating-linear-gradient(180deg, #000 0, #000 1px, transparent 1px, transparent 80px)`,
+              backgroundColor: "#000",
             }}
           ></div>
         </div>
@@ -127,11 +126,8 @@ const LoginForm: React.FC = () => {
             </h1>
           </Link>
           <h2 className="text-2xl sm:text-3xl font-thin tracking-tight text-gray-900">
-            アカウントにログイン
+            ログイン
           </h2>
-          <p className="text-sm text-gray-600 font-light font-mono tracking-wider">
-            [ SPORTS MATCHING PLATFORM ]
-          </p>
         </div>
 
         <form
@@ -259,7 +255,7 @@ const LoginForm: React.FC = () => {
             <button
               type="submit"
               disabled={isLoading}
-              className="relative w-full flex justify-center py-3 px-4 bg-gray-900 text-white font-light tracking-wider transition-all duration-500 hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden group"
+              className="relative w-full flex justify-center py-3 px-4 bg-gray-900 text-white font-light tracking-wider cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <span className="relative z-10 flex items-center">
                 {isLoading ? (
@@ -268,7 +264,7 @@ const LoginForm: React.FC = () => {
                   <>
                     ログイン
                     <svg
-                      className="ml-2 w-4 h-4 transition-transform duration-300 group-hover:translate-x-2"
+                      className="ml-2 w-4 h-4"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -283,7 +279,6 @@ const LoginForm: React.FC = () => {
                   </>
                 )}
               </span>
-              <div className="absolute inset-0 bg-gray-800 transform -translate-x-full group-hover:translate-x-0 transition-transform duration-500"></div>
             </button>
           </div>
 
@@ -293,11 +288,11 @@ const LoginForm: React.FC = () => {
             </p>
             <Link
               to="/register"
-              className="inline-flex items-center text-sm font-light text-gray-900 hover:text-gray-700 transition-all duration-200 group border border-gray-900 px-4 py-2 hover:bg-gray-900 hover:text-white"
+              className="inline-flex items-center text-sm font-light text-gray-900 cursor-pointer border border-gray-900 px-4 py-2"
             >
               新規登録はこちら
               <svg
-                className="ml-2 w-4 h-4 transition-transform duration-200 group-hover:rotate-90"
+                className="ml-2 w-4 h-4"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"

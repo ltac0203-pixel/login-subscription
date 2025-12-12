@@ -189,9 +189,7 @@ export const subscriptionAPI = {
 
     const data = await response.json();
     if (!response.ok) {
-      throw new Error(
-        data.error || "保存済みカードの取得に失敗しました"
-      );
+      throw new Error(data.error || "保存済みカードの取得に失敗しました");
     }
 
     return data;
